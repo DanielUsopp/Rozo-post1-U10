@@ -44,13 +44,13 @@ Valores reales del primer análisis (commit `test: agregar suite inicial de Serv
 
 ## Decisiones de diseño
 
-### 1. Entorno de análisis: SonarQube local con Docker
-Se eligió SonarQube Community Build en Docker (`sonarqube:community`) en lugar de SonarCloud, por dos criterios de la tabla del enunciado:
+### 1. Entorno de análisis: SonarQube local
+Se eligió una instancia local de SonarQube Community Build 26.11 (la distribución descargable, iniciada con `sonar.sh start`) en lugar de SonarCloud, por dos criterios de la tabla del enunciado:
 
 - **Control total de la configuración.** La Parte 2 exige duplicar el perfil de calidad de Java, activar una regla con un umbral propio y crear un Quality Gate con condiciones específicas. En la instancia local todo eso se hace con la cuenta de administrador, sin depender de lo que permita el plan gratuito de un servicio externo.
 - **Sin depender de conectividad ni de la visibilidad del proyecto.** El análisis se ejecuta contra `localhost:9000` y los resultados no quedan publicados; en SonarCloud un proyecto gratuito es público.
 
-El costo aceptado es el que indica la misma tabla: el contenedor consume memoria de la máquina y tuvo que estar encendido durante todo el laboratorio, incluido el segundo análisis.
+El costo aceptado es el que indica la misma tabla: el servidor consume memoria de la máquina (levanta Elasticsearch, el servidor web y el motor de cómputo) y tuvo que estar encendido durante todo el laboratorio, incluido el segundo análisis. Con Docker (`sonarqube:community`) el costo sería el mismo; se usó la distribución directa porque no hacía falta nada más que Java.
 
 ### 2. Exclusiones del análisis: ninguna
 `sonar.exclusions` quedó comentado en `sonar-project.properties`. El proyecto no tiene clase de arranque, ni código generado, ni DTOs: todo `src/main/java` es lógica de negocio y es justamente lo que se quería medir. Excluir algo solo tendría sentido si una clase sin lógica bajara el porcentaje de cobertura sin decir nada sobre la calidad del código. Las pruebas no necesitan exclusión porque `sonar.tests` ya las separa del código analizado.
@@ -153,14 +153,17 @@ Análisis final (Parte 2):
 
 ## Cómo ejecutar
 ```bash
-docker run -d --name sonarqube -p 9000:9000 -e SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true sonarqube:community
+# SonarQube en localhost:9000 (cualquiera de las dos opciones)
+sonarqube-26.11/bin/linux-x86-64/sonar.sh start      # distribución descargada (en Windows: bin\windows-x86-64\StartSonar.bat)
+docker run -d --name sonarqube -p 9000:9000 sonarqube:community
+
 mvn clean verify                              # pruebas + reporte en target/site/jacoco/index.html
 mvn clean verify sonar:sonar -Dsonar.token=TU_TOKEN
 ```
 
 ## Herramientas utilizadas
 - Java 21, Apache Maven, JUnit 5
-- SonarQube Community Build 26.11 (Docker), JaCoCo 0.8.14
+- SonarQube Community Build 26.11 (instancia local), JaCoCo 0.8.14
 - Git, GitHub
 
 ## Conclusiones
